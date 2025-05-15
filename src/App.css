@@ -5,3 +5,18 @@ body {
     padding: 0;
     font-family: Arial, sans-serif;
   }
+
+body.light {
+    background-color: white;
+    color: black;
+}
+
+body.dark {
+    background-color: #121212;
+    color: white;
+}
+
+button {
+    padding: 8px 16px;
+    margin-top: 16px;
+}

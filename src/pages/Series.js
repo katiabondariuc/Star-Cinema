@@ -3,7 +3,7 @@ import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
 import "../pages/Series.css"
 
-const series = [
+const rawSeries = [
     { id: 1, title: "Сериал 1", image: "./images/series/series1.jpg" },
     { id: 2, title: "Сериал 2", image: "./images/series/series2.jpg" },
     { id: 3, title: "Сериал 3", image: "./images/series/series3.jpg" },
@@ -25,6 +25,9 @@ const series = [
     { id: 19, title: "Сериал 19", image: "./images/series/series19.jpg" },
     { id: 20, title: "Сериал 20", image: "./images/series/series20.jpg" },
   ];
+
+const series = rawSeries.map(item => ({ ...item, type: "series" }));
+
   
   const Series = () => {
     return (
