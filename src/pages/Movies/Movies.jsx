@@ -1,35 +1,32 @@
 import React, { useEffect, useState } from "react";
-import Header from "../components/Header/Header";
-import Footer from "../components/Footer/Footer";
-import "../pages/Movies.css";
+import Header from "../../components/Header/Header";
+import Footer from "../../components/Footer/Footer";
+import "./Movies.css";
 
 const Movies = () => {
     const [movies, setMovies] = useState([]);
 
-    useEffect(() => {
-        const url = 'https://api.themoviedb.org/3/account/22018353/rated/movies?language=en-US&page=1&sort_by=created_at.asc';
-        const options = {
-            method: 'GET',
-            headers: {
-                accept: 'application/json',
-                Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwNzhjMDlkYjI4ZGNlMDhhNTk4N2NkMGRlNzc1MTdiYiIsIm5iZiI6MTc0NzU3Mzg2Ny40MzkwMDAxLCJzdWIiOiI2ODI5ZGM2YmY1Y2JmMWQ4NjFlMjQ2NjIiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.vV5sFSXpIhFtnjFJGUtC9UAQ54GQ7GOg0Ws2jq0vW2s'
-            }
-        };
+    const API_KEY = process.env.REACT_APP_TMDB_BEARER;
+    console.log("API_KEY:", API_KEY);
 
-        fetch(url, options)
-            .then(res => res.json())
-            .then(json => {
+    useEffect(() => {
+        const url = `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=en-US&page=1`;
+
+        fetch(url)
+            .then((res) => res.json())
+            .then((json) => {
                 if (json.results) {
                     setMovies(json.results);
                 }
             })
-            .catch(err => console.error('Error fetching movies:', err));
-    }, []);
+            .catch((err) => console.error("Error fetching movies:", err));
+    }, [API_KEY]);
 
     return (
         <>
             <Header />
             <div className="movies-page">
+                <h1>Popular Movies</h1>
                 <div className="movies-grid">
                     {movies.map((movie) => (
                         <div key={movie.id} className="movie-card">
