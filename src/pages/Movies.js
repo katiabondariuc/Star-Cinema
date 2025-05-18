@@ -1,49 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
-import "../pages/Movies.css"
+import "../pages/Movies.css";
 
-const movies = [
-    { id: 1, title: "Фильм 1", image: "./images/movies/movie1.jpg" },
-    { id: 2, title: "Фильм 2", image: "./images/movies/movie2.jpg" },
-    { id: 3, title: "Фильм 3", image: "./images/movies/movie3.jpg" },
-    { id: 4, title: "Фильм 4", image: "./images/movies/movie4.jpg" },
-    { id: 5, title: "Фильм 5", image: "./images/movies/movie5.jpg" },
-    { id: 6, title: "Фильм 6", image: "./images/movies/movie6.jpg" },
-    { id: 7, title: "Фильм 7", image: "./images/movies/movie7.jpg" },
-    { id: 8, title: "Фильм 8", image: "./images/movies/movie8.jpg" },
-    { id: 9, title: "Фильм 9", image: "./images/movies/movie9.jpg" },
-    { id: 10, title: "Фильм 10", image: "./images/movies/movie10.jpg" },
-    { id: 11, title: "Фильм 11", image: "./images/movies/movie11.jpg" },
-    { id: 12, title: "Фильм 12", image: "./images/movies/movie12.jpg" },
-    { id: 13, title: "Фильм 13", image: "./images/movies/movie13.jpg" },
-    { id: 14, title: "Фильм 14", image: "./images/movies/movie14.jpg" },
-    { id: 15, title: "Фильм 15", image: "./images/movies/movie15.jpg" },
-    { id: 16, title: "Фильм 16", image: "./images/movies/movie16.jpg" },
-    { id: 16, title: "Фильм 17", image: "./images/movies/movie16.jpg" },
-    { id: 16, title: "Фильм 18", image: "./images/movies/movie16.jpg" },
-    { id: 16, title: "Фильм 19", image: "./images/movies/movie16.jpg" },
-    { id: 16, title: "Фильм 20", image: "./images/movies/movie16.jpg" },
-  ];
-  
-  const Movies = () => {
+const Movies = () => {
+    const [movies, setMovies] = useState([]);
+
+    useEffect(() => {
+        const url = 'https://api.themoviedb.org/3/account/22018353/rated/movies?language=en-US&page=1&sort_by=created_at.asc';
+        const options = {
+            method: 'GET',
+            headers: {
+                accept: 'application/json',
+                Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwNzhjMDlkYjI4ZGNlMDhhNTk4N2NkMGRlNzc1MTdiYiIsIm5iZiI6MTc0NzU3Mzg2Ny40MzkwMDAxLCJzdWIiOiI2ODI5ZGM2YmY1Y2JmMWQ4NjFlMjQ2NjIiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.vV5sFSXpIhFtnjFJGUtC9UAQ54GQ7GOg0Ws2jq0vW2s'
+            }
+        };
+
+        fetch(url, options)
+            .then(res => res.json())
+            .then(json => {
+                if (json.results) {
+                    setMovies(json.results);
+                }
+            })
+            .catch(err => console.error('Error fetching movies:', err));
+    }, []);
+
     return (
-      <>
-        <Header />
-        <div className="movies-page">
-          <div className="movies-grid">
-            {movies.map((movie) => (
-              <div key={movie.id} className="movie-card">
-                <img src={movie.image} alt={movie.title} />
-                <h2>{movie.title}</h2>
-                <a href={`/movies/${movie.id}`} className="watch-now">Watch Now</a>
-              </div>
-            ))}
-          </div>
-        </div>
-        <Footer />
-      </>
+        <>
+            <Header />
+            <div className="movies-page">
+                <div className="movies-grid">
+                    {movies.map((movie) => (
+                        <div key={movie.id} className="movie-card">
+                            <img
+                                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                                alt={movie.title}
+                            />
+                            <h2>{movie.title}</h2>
+                            <a href={`/movies/${movie.id}`} className="watch-now">
+                                Watch Now
+                            </a>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <Footer />
+        </>
     );
-  };
-  
-  export default Movies;
+};
+
+export default Movies;
