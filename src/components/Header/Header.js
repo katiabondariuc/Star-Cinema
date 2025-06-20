@@ -7,14 +7,14 @@ import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 
 const Header = () => {
 
-  const [theme, setTheme] = useState(() => {
-    // Проверяем наличие сохраненной темы в localStorage
+  const [theme, setTheme] = useState(() => { //запоминает значение компонента
+    // наличие сохраненной темы в localStorage
     const savedTheme = localStorage.getItem("theme");
     return savedTheme ? savedTheme : "dark"; // если тема не сохранена, используем "dark" по умолчанию
   });
 
 
-  useEffect(() => {
+  useEffect(() => { // выполняет действие
     // Сохраняем выбранную тему в localStorage
     localStorage.setItem("theme", theme);
     document.body.className = theme;

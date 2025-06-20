@@ -22,7 +22,7 @@ const MovieDetails = () => {
             .then((res) => res.json())
             .then((data) => {
                 if (data.results && data.results.length > 0) {
-                    setTrailer(data.results[0]); // Берем первый трейлер
+                    setTrailer(data.results[0]); //первый трейлер
                 }
             })
             .catch((err) => console.error("Error loading trailer:", err));
