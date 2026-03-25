@@ -4,7 +4,12 @@ import "./Register.css";
 
 const Register = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ username: "", password: "", confirm: "" });
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -12,11 +17,11 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const { username, password, confirm } = formData;
+    const { username, email, password, confirm } = formData;
 
-    if (!username || !password || !confirm) {
+    if (!username || !email || !password || !confirm) {
       setError("Заполните все поля.");
       setSuccess("");
       return;
@@ -28,20 +33,33 @@ const Register = () => {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("mockUsers") || "[]");
-    const isDuplicate = users.some((u) => u.username === username);
-    if (isDuplicate) {
-      setError("Пользователь с таким именем уже существует.");
+    try {
+      const response = await fetch("http://localhost:3000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          role: "USER", // роль по умолчанию
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || "Ошибка регистрации");
+        setSuccess("");
+        return;
+      }
+
+      setError("");
+      setSuccess("Регистрация прошла успешно! Выполните вход.");
+      setTimeout(() => navigate("/login"), 1200);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Ошибка сети. Проверьте подключение к серверу.");
       setSuccess("");
-      return;
     }
-
-    const newUser = { username, password, role: username === "admin" ? "admin" : "user" };
-    localStorage.setItem("mockUsers", JSON.stringify([...users, newUser]));
-
-    setError("");
-    setSuccess("Регистрация прошла успешно! Выполните вход.");
-    setTimeout(() => navigate("/login"), 1200);
   };
 
   return (
@@ -51,11 +69,36 @@ const Register = () => {
         <p>Создайте новый аккаунт за пару секунд.</p>
         <form onSubmit={handleSubmit}>
           <label>Имя пользователя</label>
-          <input name="username" value={formData.username} onChange={handleChange} placeholder="Придумайте логин" />
+          <input
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            placeholder="Придумайте логин"
+          />
+          <label>Email</label>
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Введите email"
+          />
           <label>Пароль</label>
-          <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Введите пароль" />
+          <input
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Введите пароль"
+          />
           <label>Подтвердите пароль</label>
-          <input name="confirm" type="password" value={formData.confirm} onChange={handleChange} placeholder="Повторите пароль" />
+          <input
+            name="confirm"
+            type="password"
+            value={formData.confirm}
+            onChange={handleChange}
+            placeholder="Повторите пароль"
+          />
           {error && <div className="error">{error}</div>}
           {success && <div className="success">{success}</div>}
           <button type="submit" className="btn-primary">Зарегистрироваться</button>

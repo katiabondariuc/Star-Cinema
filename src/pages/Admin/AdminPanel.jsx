@@ -6,15 +6,6 @@ const AdminPanel = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const auth = JSON.parse(localStorage.getItem("authUser") || "null");
-    if (!auth || auth.role !== "admin") {
-      navigate("/login", { replace: true });
-      return;
-    }
-    setUser(auth);
-  }, [navigate]);
-
   const [users, setUsers] = useState([]);
   const [movies, setMovies] = useState([]);
   const [series, setSeries] = useState([]);
@@ -22,65 +13,169 @@ const AdminPanel = () => {
   const [contentTitle, setContentTitle] = useState("");
   const [contentDescription, setContentDescription] = useState("");
   const [contentEditId, setContentEditId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const auth = JSON.parse(localStorage.getItem("authUser") || "null");
+    if (!auth || auth.role.toUpperCase() !== "ADMIN") {
+      navigate("/login", { replace: true });
+      return;
+    }
+    setUser(auth);
+  }, [navigate]);
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("authToken");
+    return token
+      ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+      : { "Content-Type": "application/json" };
+  };
+
+  const checkAuth = (response) => {
+    if (response.status === 401) {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("authUser");
+      navigate("/login");
+      return false;
+    }
+    return true;
+  };
 
   const handleLogout = () => {
+    localStorage.removeItem("authToken");
     localStorage.removeItem("authUser");
     navigate("/");
   };
 
-  useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem("mockUsers") || "[]");
-    setUsers(storedUsers.length ? storedUsers : [
-      { id: 1, username: "admin", role: "admin", active: true },
-      { id: 2, username: "user1", role: "user", active: true },
-      { id: 3, username: "user2", role: "user", active: false },
-    ]);
-
-    setMovies([
-      { id: 1, title: "Интерстеллар", description: "Космическая драма", active: true },
-      { id: 2, title: "Начало", description: "Триллер о снах", active: true },
-    ]);
-
-    setSeries([
-      { id: 1, title: "Игра престолов", description: "Фэнтези-драма", active: true },
-      { id: 2, title: "Черное зеркало", description: "Антология научной фантастики", active: true },
-    ]);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("mockUsers", JSON.stringify(users));
-  }, [users]);
-
-  const refreshUsers = () => {
-    const updated = users.map((user) => user);
-    setUsers(updated);
+  // Универсальная функция для извлечения массива из ответа API
+  const extractArray = (data) => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.users)) return data.users;
+    if (Array.isArray(data.results)) return data.results;
+    console.error("Некорректный формат данных:", data);
+    return [];
   };
 
-  const toggleUserActive = (id) => {
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u)));
-  };
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/users", {
+        headers: getAuthHeaders(),
+      });
+      if (!checkAuth(response)) return;
 
-  const deleteUser = (id) => {
-    if (window.confirm("Удалить пользователя?")) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(extractArray(data));
+      } else {
+        console.error("Ошибка загрузки пользователей:", response.status);
+        setUsers([]);
+      }
+    } catch (err) {
+      console.error("Ошибка сети при загрузке пользователей:", err);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const promoteDemote = (id) => {
-    setUsers((prev) => prev.map((u) => {
-      if (u.id !== id) return u;
-      if (u.username === "admin") return u;
-      return { ...u, role: u.role === "user" ? "admin" : "user" };
-    }));
+  const fetchMovies = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/movies", {
+        headers: getAuthHeaders(),
+      });
+      if (!checkAuth(response)) return;
+
+      if (response.ok) {
+        const data = await response.json();
+        setMovies(extractArray(data));
+      } else {
+        console.error("Ошибка загрузки фильмов:", response.status);
+        setMovies([]);
+      }
+    } catch (err) {
+      console.error("Ошибка сети при загрузке фильмов:", err);
+      setMovies([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const activeContent = contentType === "movies" ? movies : series;
+  const fetchSeries = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/movies?type=series", {
+        headers: getAuthHeaders(),
+      });
+      if (!checkAuth(response)) return;
 
-  const deleteContent = (id) => {
-    if (contentType === "movies") {
-      setMovies((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      setSeries((prev) => prev.filter((item) => item.id !== id));
+      if (response.ok) {
+        const data = await response.json();
+        setSeries(extractArray(data));
+      } else {
+        console.error("Ошибка загрузки сериалов:", response.status);
+        setSeries([]);
+      }
+    } catch (err) {
+      console.error("Ошибка сети при загрузке сериалов:", err);
+      setSeries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchMovies();
+    fetchSeries();
+  }, []);
+
+  const refreshUsers = () => fetchUsers();
+
+  const deleteUser = async (id) => {
+    if (!window.confirm("Удалить пользователя?")) return;
+    try {
+      const response = await fetch(`http://localhost:3000/users/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      if (checkAuth(response) && response.ok) fetchUsers();
+      else console.error("Ошибка удаления:", response.status);
+    } catch (err) {
+      console.error("Ошибка сети при удалении пользователя:", err);
+    }
+  };
+
+  const promoteDemote = async (id) => {
+    const u = users.find(u => u.id === id);
+    if (!u || u.username === "admin") return;
+    try {
+      const response = await fetch(`http://localhost:3000/users/${id}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ role: u.role === "user" ? "admin" : "user" }),
+      });
+      if (checkAuth(response) && response.ok) fetchUsers();
+      else console.error("Ошибка изменения роли:", response.status);
+    } catch (err) {
+      console.error("Ошибка сети при изменении роли:", err);
+    }
+  };
+
+  const deleteContent = async (id) => {
+    const endpoint = "movies"; // можно добавить "series", если нужно
+    try {
+      const response = await fetch(`http://localhost:3000/${endpoint}/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      if (checkAuth(response) && response.ok) {
+        contentType === "movies" ? fetchMovies() : fetchSeries();
+      } else console.error("Ошибка удаления контента:", response.status);
+    } catch (err) {
+      console.error("Ошибка сети при удалении контента:", err);
     }
   };
 
@@ -96,27 +191,32 @@ const AdminPanel = () => {
     setContentEditId(null);
   };
 
-  const saveContent = (e) => {
+  const saveContent = async (e) => {
     e.preventDefault();
     if (!contentTitle.trim()) return;
 
-    if (contentEditId) {
-      const updater = (item) => item.id === contentEditId ? { ...item, title: contentTitle, description: contentDescription } : item;
-      if (contentType === "movies") setMovies((prev) => prev.map(updater));
-      if (contentType === "series") setSeries((prev) => prev.map(updater));
-    } else {
-      const newItem = {
-        id: Date.now(),
-        title: contentTitle,
-        description: contentDescription,
-        active: true,
-      };
-      if (contentType === "movies") setMovies((prev) => [...prev, newItem]);
-      if (contentType === "series") setSeries((prev) => [...prev, newItem]);
-    }
+    const endpoint = "movies"; // можно добавить "series", если нужно
+    const method = contentEditId ? "PUT" : "POST";
+    const url = contentEditId
+      ? `http://localhost:3000/${endpoint}/${contentEditId}`
+      : `http://localhost:3000/${endpoint}`;
 
-    cancelEdit();
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ title: contentTitle, description: contentDescription }),
+      });
+      if (checkAuth(response) && response.ok) {
+        contentType === "movies" ? fetchMovies() : fetchSeries();
+        cancelEdit();
+      } else console.error("Ошибка сохранения контента:", response.status);
+    } catch (err) {
+      console.error("Ошибка сети при сохранении контента:", err);
+    }
   };
+
+  const activeContent = contentType === "movies" ? movies : series;
 
   const mockStats = {
     users: users.length,
@@ -148,18 +248,19 @@ const AdminPanel = () => {
 
         <div className="admin-section">
           <h2>Управление пользователями</h2>
+          {loading && <p>Загрузка...</p>}
           <table className="admin-table">
-            <thead><tr><th>id</th><th>Логин</th><th>Роль</th><th>Статус</th><th>Действия</th></tr></thead>
+            <thead><tr><th>id</th><th>Логин</th><th>Роль</th><th>Действия</th></tr></thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className={u.active ? "" : "row-inactive"}>
+              {users.map(u => (
+                <tr key={u.id}>
                   <td>{u.id}</td>
                   <td>{u.username}</td>
                   <td>{u.role}</td>
-                  <td>{u.active ? "Активен" : "Заблокирован"}</td>
                   <td>
-                    <button onClick={() => toggleUserActive(u.id)}>{u.active ? "Блок" : "Разблок"}</button>
-                    <button onClick={() => promoteDemote(u.id)}>{u.role === "user" ? "Сделать админом" : "Сделать юзером"}</button>
+                    <button onClick={() => promoteDemote(u.id)}>
+                      {u.role === "user" ? "Сделать админом" : "Сделать юзером"}
+                    </button>
                     {u.username !== "admin" && <button onClick={() => deleteUser(u.id)}>Удалить</button>}
                   </td>
                 </tr>
@@ -185,10 +286,11 @@ const AdminPanel = () => {
             </form>
           </div>
 
+          {loading && <p>Загрузка...</p>}
           <table className="admin-table">
             <thead><tr><th>id</th><th>Название</th><th>Описание</th><th>Статус</th><th>Действия</th></tr></thead>
             <tbody>
-              {activeContent.map((item) => (
+              {activeContent.map(item => (
                 <tr key={item.id} className={item.active ? "" : "row-inactive"}>
                   <td>{item.id}</td>
                   <td>{item.title}</td>
@@ -202,6 +304,7 @@ const AdminPanel = () => {
               ))}
             </tbody>
           </table>
+          <button className="btn-mini" onClick={() => { contentType === "movies" ? fetchMovies() : fetchSeries(); }}>Обновить список</button>
         </div>
       </div>
     </section>
