@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeart, faUser } from "@fortawesome/free-regular-svg-icons";
-import "../../components/Header/Header.css";
 import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import "../../components/Header/Header.css";
 
 const Header = () => {
+  const [userRole, setUserRole] = useState(null);
 
   const [theme, setTheme] = useState(() => { //запоминает значение компонента
     // наличие сохраненной темы в localStorage
@@ -18,6 +19,10 @@ const Header = () => {
     // Сохраняем выбранную тему в localStorage
     localStorage.setItem("theme", theme);
     document.body.className = theme;
+
+    const auth = JSON.parse(localStorage.getItem("authUser") || "null");
+    if (auth && auth.role) setUserRole(auth.role);
+    else setUserRole(null);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -41,13 +46,16 @@ const Header = () => {
               <li><Link to="/">Home</Link></li>
               <li><Link to="/series">Series</Link></li>
               <li><Link to="/movies">Movies</Link></li>
+              {userRole === "admin" && <li><Link to="/admin">Admin</Link></li>}
             </ul>
             <div className="search-bar">
               <input type="text" placeholder="Search..." />
             </div>
             <div className="icons">
               <FontAwesomeIcon icon={faHeart} className="icon heart" />
-              <FontAwesomeIcon icon={faUser} className="icon" />
+              <Link to="/login" className="icon user-link" title="Войти или зарегистрироваться">
+                <FontAwesomeIcon icon={faUser} className="icon" />
+              </Link>
               <button onClick={toggleTheme} className="theme-toggle">
                 <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
               </button>
